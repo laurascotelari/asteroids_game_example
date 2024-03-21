@@ -75,7 +75,7 @@ def send_data_GPU(vertices, type_coord, program):
     glVertexAttribPointer(loc, len(vertices[0][0]), type_coord, False, stride, offset)
 
 def key_event(window,key,scancode,action,mods):
-    global r_inc, s_inc, vel
+    global x_inc, y_inc, r_inc, s_inc, vel
     
     if key == 265: vel += 0.0001
     if key == 264: vel -= 0.0001
@@ -88,14 +88,19 @@ def key_event(window,key,scancode,action,mods):
         
     #print(key)
 
+
 cursor_x = 0.0
 cursor_y = 0.0
 
-def poschange(x,y):
+def cursor_position_event(window, xpos, ypos):
     global cursor_x, cursor_y
-    w, h = get_screen_size()
-    cursor_x = (x - w/2)/(w/2) #normalizando as coordenadas do cursor
-    cursor_y = (h/2 - y)/(h/2)
+
+    print(f"mouse x = {xpos}")
+    print(f"mouse y = {ypos}")
+
+    w, h = get_screen_size(False)
+    cursor_x = (xpos - w/2)/(w/2) #normalizando as coordenadas do cursor
+    cursor_y = (h/2 - ypos)/(h/2)
 
 
 def multiplica_matriz(a,b):
@@ -105,14 +110,16 @@ def multiplica_matriz(a,b):
     c = m_c.reshape(1,16)
     return c
 
-def get_screen_size():
+def get_screen_size(flag):
+    #valores padrao
     screen_width = 800
     screen_height = 800
     
     #Resolucao do monitor
-    for m in get_monitors():
-        screen_width = m.width
-        screen_height = m.height
+    if flag:
+        for m in get_monitors():
+            screen_width = m.width
+            screen_height = m.height
     
     return screen_width, screen_height
 
@@ -126,7 +133,8 @@ def calc_sin_cos(triang_x, triang_y):
     
     c = ca/hi
     s = co/hi
-
+    
+    print(f"Cos: {c}\nSen:{s}")
     return c, s
 
 def calc_direcao_nave():
@@ -160,10 +168,7 @@ vel = 0.0
 
 def main():
 
-    screen_width, screen_height = get_screen_size()
-
-    #screen_width = 800
-    #screen_height = 800
+    screen_width, screen_height = get_screen_size(False)
 
     window = init_window(screen_width, screen_height)
     glfw.set_key_callback(window,key_event)
@@ -191,12 +196,13 @@ def main():
     vertices['position'] = [
                                 ( 0.00, +0.05), 
                                 (-0.05, -0.05), 
-                                (+0.05, -0.05)
+                                (+0.1, -0.05)
                             ]
 
     send_data_GPU(vertices, GL_FLOAT, program)
 
     glfw.show_window(window)
+    glfw.set_cursor_pos_callback(window, cursor_position_event)
 
     t_x = 0.0
     t_y = 0.0
@@ -207,26 +213,18 @@ def main():
     triang_x = 0
     triang_y = 0
 
-    #listener para captar movimentos do mouse
-    mouli = pynput.mouse.Listener(on_move = poschange)
-    mouli.start()
-
     while not glfw.window_should_close(window):
 
         t_x += x_inc
         t_y += y_inc
-        angulo += r_inc
+        angulo += r_inc 
         
         s_x = s_inc
         s_y = s_inc
 
         calc_direcao_nave()
-
-        #print(f"Posicao Triangulo:({triang_x},{triang_y})")
         
         c, s = calc_sin_cos(triang_x, triang_y)
-        #c = math.cos( math.radians(angulo) ) #CA/HI
-        #s = math.sin( math.radians(angulo) ) #CO/HI
         
         glfw.poll_events() 
         
@@ -267,9 +265,6 @@ def main():
         elif triang_y < -1:
             t_y = 1
 
-        #print(f"Posicao Cursor:({cursor_x},{cursor_y})")
-
-  
         loc = glGetUniformLocation(program, "mat")
         glUniformMatrix4fv(loc, 1, GL_TRUE, mat_transform)
         glDrawArrays(GL_TRIANGLES, 0, 3)
