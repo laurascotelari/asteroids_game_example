@@ -4,7 +4,6 @@ import OpenGL.GL.shaders
 import numpy as np
 import math
 from screeninfo import get_monitors
-import pynput
 
 
 def init_window(height, width):
@@ -95,9 +94,6 @@ cursor_y = 0.0
 def cursor_position_event(window, xpos, ypos):
     global cursor_x, cursor_y
 
-    print(f"mouse x = {xpos}")
-    print(f"mouse y = {ypos}")
-
     w, h = get_screen_size(False)
     cursor_x = (xpos - w/2)/(w/2) #normalizando as coordenadas do cursor
     cursor_y = (h/2 - ypos)/(h/2)
@@ -134,7 +130,6 @@ def calc_sin_cos(triang_x, triang_y):
     c = ca/hi
     s = co/hi
     
-    print(f"Cos: {c}\nSen:{s}")
     return c, s
 
 def calc_direcao_nave():
@@ -183,7 +178,7 @@ def main():
 
     fragment_code = """
             void main(){
-                gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+                gl_FragColor = vec4(1.0,1.0,1.0,1.0);
             }
             """
 
@@ -196,7 +191,7 @@ def main():
     vertices['position'] = [
                                 ( 0.00, +0.05), 
                                 (-0.05, -0.05), 
-                                (+0.1, -0.05)
+                                (+0.10, -0.05)
                             ]
 
     send_data_GPU(vertices, GL_FLOAT, program)
@@ -216,9 +211,7 @@ def main():
     while not glfw.window_should_close(window):
 
         t_x += x_inc
-        t_y += y_inc
-        angulo += r_inc 
-        
+        t_y += y_inc        
         s_x = s_inc
         s_y = s_inc
 
@@ -229,7 +222,7 @@ def main():
         glfw.poll_events() 
         
         glClear(GL_COLOR_BUFFER_BIT) 
-        glClearColor(1.0, 1.0, 1.0, 1.0)
+        glClearColor(0, 0, 0, 1.0)
         
         #Draw Triangle
         mat_rotation = np.array([  c  , -s , 0.0, 0.0, 
@@ -267,6 +260,7 @@ def main():
 
         loc = glGetUniformLocation(program, "mat")
         glUniformMatrix4fv(loc, 1, GL_TRUE, mat_transform)
+        glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
         glDrawArrays(GL_TRIANGLES, 0, 3)
 
 
