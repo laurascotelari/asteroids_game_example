@@ -4,6 +4,7 @@ import OpenGL.GL.shaders
 import numpy as np
 import math
 from screeninfo import get_monitors
+import random
 
 
 def init_window(height, width):
@@ -147,6 +148,48 @@ def calc_direcao_nave():
     
     return x_inc, y_inc
 
+def calc_rotacao_asteroid(inc, angulo, t_x, t_y, way):
+    #angulo de rotacao do asteroid
+    angulo += inc
+    c_ast = math.cos( math.radians(angulo*way) )
+    s_ast = math.sin( math.radians(angulo*way) )
+
+    mat_rot = np.array([  c_ast  , -s_ast , 0.0, 0.0, 
+                       s_ast  ,  c_ast , 0.0, 0.0, 
+                       0.0    , 0.0    , 1.0, 0.0, 
+                       0.0    , 0.0    , 0.0, 1.0], np.float32)
+    
+    mat_trans = calc_matriz_transacao(t_x, t_y)
+    
+    mat = multiplica_matriz(mat_trans,mat_rot)
+    
+    return mat, angulo
+
+def calc_matriz_transacao(t_x, t_y):
+    return np.array([1.0, 0.0, 0.0, t_x, 
+                     0.0, 1.0, 0.0, t_y, 
+                     0.0, 0.0, 1.0, 0.0, 
+                     0.0, 0.0, 0.0, 1.0], np.float32)
+
+def calc_posicao_estrelas(num_estrelas):
+    pos_estrelas = np.zeros((num_estrelas,2), dtype=np.float64)
+
+    for i in range(num_estrelas):
+        x = random.uniform(-100, 100)/100
+        y = random.uniform(-100, 100)/100
+
+        pos_estrelas[i][0] = x
+        pos_estrelas[i][1] = y
+
+    return pos_estrelas
+
+
+def gerar_estrelas(num_estrelas, program, ponto_inicial, num_pontos, pos_estrelas):
+    for i in range(num_estrelas):
+        loc = glGetUniformLocation(program, "mat")
+        glUniformMatrix4fv(loc, 1, GL_TRUE, calc_matriz_transacao(pos_estrelas[i][0], pos_estrelas[i][1]))
+        glDrawArrays(GL_LINE_LOOP, ponto_inicial, num_pontos)
+
 
 # translacao
 x_inc = 0.0
@@ -185,13 +228,29 @@ def main():
     program = init_shaders(vertex_code, fragment_code)
 
     # preparando espaço para 3 vértices usando 2 coordenadas (x,y)
-    vertices = np.zeros(3, [("position", np.float32, 2)])
+    vertices = np.zeros(15, [("position", np.float32, 2)])
 
     # preenchendo as coordenadas de cada vértice
     vertices['position'] = [
+                                #pontos referentes a nave
                                 ( 0.00, +0.05), 
                                 (-0.05, -0.05), 
-                                (+0.10, -0.05)
+                                (+0.10, -0.05),
+                                #pontos referentes ao asteroide 1
+                                (-0.09, +0.03), 
+                                (-0.025, -0.03), 
+                                (+0.07, 0.05),
+                                (+0.02, 0.09),
+                                #pontos referentes ao asteroide 2
+                                (-0.09, +0.03), 
+                                (-0.025, -0.03), 
+                                (+0.07, 0.05),
+                                (+0.02, 0.09),
+                                (-0.1 , 0.1 ),
+                                #estrela
+                                (0.1,0.1),
+                                (0.103,0.103),
+                                (0.1,0.103)
                             ]
 
     send_data_GPU(vertices, GL_FLOAT, program)
@@ -208,6 +267,10 @@ def main():
     triang_x = 0
     triang_y = 0
 
+    #calculando as coordenadas das estrelas
+    num_estrelas = 40
+    pos_estrelas = calc_posicao_estrelas(num_estrelas)
+
     while not glfw.window_should_close(window):
 
         t_x += x_inc
@@ -223,7 +286,12 @@ def main():
         
         glClear(GL_COLOR_BUFFER_BIT) 
         glClearColor(0, 0, 0, 1.0)
-        
+
+        #matriz de rotacao e translacao do asteroide
+        mat_asteroid1, angulo = calc_rotacao_asteroid(0.025, angulo, 0.5, 0.3, 1)
+        #matriz de rotacao e translacao do asteroide
+        mat_asteroid2, angulo = calc_rotacao_asteroid(0.04, angulo, -0.5, -0.3, -1)
+
         #Draw Triangle
         mat_rotation = np.array([  c  , -s , 0.0, 0.0, 
                                    s  ,  c , 0.0, 0.0, 
@@ -263,6 +331,15 @@ def main():
         glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
         glDrawArrays(GL_TRIANGLES, 0, 3)
 
+        loc = glGetUniformLocation(program, "mat")
+        glUniformMatrix4fv(loc, 1, GL_TRUE, mat_asteroid1)
+        glDrawArrays(GL_LINE_LOOP, 3, 4)   
+
+        loc = glGetUniformLocation(program, "mat")
+        glUniformMatrix4fv(loc, 1, GL_TRUE, mat_asteroid2)
+        glDrawArrays(GL_LINE_LOOP, 7, 5)  
+
+        gerar_estrelas(num_estrelas, program, 12, 3, pos_estrelas)
 
         glfw.swap_buffers(window)
 
