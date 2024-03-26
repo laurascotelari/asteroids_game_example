@@ -228,7 +228,7 @@ def main():
     program = init_shaders(vertex_code, fragment_code)
 
     # preparando espaço para 3 vértices usando 2 coordenadas (x,y)
-    vertices = np.zeros(15, [("position", np.float32, 2)])
+    vertices = np.zeros(23, [("position", np.float32, 2)])
 
     # preenchendo as coordenadas de cada vértice
     vertices['position'] = [
@@ -236,21 +236,30 @@ def main():
                                 ( 0.00, +0.05), 
                                 (-0.05, -0.05), 
                                 (+0.10, -0.05),
+                                #estrela
+                                (0.1,0.1),
+                                (0.103,0.103),
+                                (0.1,0.103),
                                 #pontos referentes ao asteroide 1
-                                (-0.09, +0.03), 
-                                (-0.025, -0.03), 
-                                (+0.07, 0.05),
-                                (+0.02, 0.09),
+                                (0.07,  0.05), 
+                                (0.02,  0.09), 
+                                (-0.05, 0.09),
+                                (-0.09,0.03),
+                                (-0.025,-0.03),
+                                (0.01,0.03),
                                 #pontos referentes ao asteroide 2
                                 (-0.09, +0.03), 
                                 (-0.025, -0.03), 
                                 (+0.07, 0.05),
                                 (+0.02, 0.09),
                                 (-0.1 , 0.1 ),
-                                #estrela
-                                (0.1,0.1),
-                                (0.103,0.103),
-                                (0.1,0.103)
+                                #pontos referentes ao asteroide 3
+                                (0.07,  0.05), 
+                                (0.02,  0.09), 
+                                (-0.05, 0.09),
+                                (-0.09,0.03),
+                                (-0.025,-0.03),
+                                (0.03,0),   
                             ]
 
     send_data_GPU(vertices, GL_FLOAT, program)
@@ -287,10 +296,12 @@ def main():
         glClear(GL_COLOR_BUFFER_BIT) 
         glClearColor(0, 0, 0, 1.0)
 
-        #matriz de rotacao e translacao do asteroide
+        #matriz de rotacao e translacao do asteroide 1
         mat_asteroid1, angulo = calc_rotacao_asteroid(0.025, angulo, 0.5, 0.3, 1)
-        #matriz de rotacao e translacao do asteroide
-        mat_asteroid2, angulo = calc_rotacao_asteroid(0.04, angulo, -0.5, -0.3, -1)
+        #matriz de rotacao e translacao do asteroide 2
+        mat_asteroid2, angulo = calc_rotacao_asteroid(0.03, angulo, -0.8, -0.4, -1)
+        #matriz de rotacao e translacao do asteroide 3
+        mat_asteroid3, angulo = calc_rotacao_asteroid(0.015, angulo, -0.3, 0.6, -1)
 
         #Draw Triangle
         mat_rotation = np.array([  c  , -s , 0.0, 0.0, 
@@ -333,13 +344,17 @@ def main():
 
         loc = glGetUniformLocation(program, "mat")
         glUniformMatrix4fv(loc, 1, GL_TRUE, mat_asteroid1)
-        glDrawArrays(GL_LINE_LOOP, 3, 4)   
+        glDrawArrays(GL_LINE_LOOP, 6, 6)   
 
         loc = glGetUniformLocation(program, "mat")
         glUniformMatrix4fv(loc, 1, GL_TRUE, mat_asteroid2)
-        glDrawArrays(GL_LINE_LOOP, 7, 5)  
+        glDrawArrays(GL_LINE_LOOP, 12, 5) 
 
-        gerar_estrelas(num_estrelas, program, 12, 3, pos_estrelas)
+        loc = glGetUniformLocation(program, "mat")
+        glUniformMatrix4fv(loc, 1, GL_TRUE, mat_asteroid3)
+        glDrawArrays(GL_LINE_LOOP, 18, 6)   
+
+        gerar_estrelas(num_estrelas, program, 3, 3, pos_estrelas)
 
         glfw.swap_buffers(window)
 
